@@ -1,0 +1,12 @@
+image:
+  registry: swr.tr-west-1.myhuaweicloud.com/huawei-aiops
+  pullPolicy: Always
+
+platform:
+  environment: huawei-cloud
+  otlpEndpoint: http://otel-collector.monitoring.svc:4317
+  automationMode: dry-run
+
+networkPolicy:
+  enabled: true
+  monitoringNamespace: monitoring

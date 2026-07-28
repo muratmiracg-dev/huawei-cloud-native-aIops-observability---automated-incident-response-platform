@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "huawei-aiops.fullname" . }}-config
+  labels:
+    {{- include "huawei-aiops.commonLabels" . | nindent 4 }}
+data:
+  ENVIRONMENT: {{ .Values.platform.environment | quote }}
+  LOG_LEVEL: {{ .Values.platform.logLevel | quote }}
+  ENABLE_TRACING: {{ .Values.platform.tracingEnabled | quote }}
+  ENABLE_FAULT_INJECTION: {{ .Values.platform.faultInjectionEnabled | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.platform.otlpEndpoint | quote }}
+  OTEL_SERVICE_NAMESPACE: {{ .Values.platform.serviceNamespace | quote }}
+  INCIDENT_AUTOMATION_MODE: {{ .Values.platform.automationMode | quote }}
+  INCIDENT_COOLDOWN_SECONDS: {{ .Values.platform.automationCooldownSeconds | quote }}
+  CATALOG_URL: "http://{{ include "huawei-aiops.fullname" . }}-catalog-api:8001"
+  PAYMENTS_URL: "http://{{ include "huawei-aiops.fullname" . }}-payments-api:8003"

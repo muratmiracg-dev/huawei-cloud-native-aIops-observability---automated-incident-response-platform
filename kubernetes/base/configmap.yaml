@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: huawei-aiops
+data:
+  ENVIRONMENT: production
+  LOG_LEVEL: INFO
+  ENABLE_TRACING: "true"
+  ENABLE_FAULT_INJECTION: "false"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.monitoring.svc:4317
+  OTEL_SERVICE_NAMESPACE: huawei-aiops
+  INCIDENT_AUTOMATION_MODE: dry-run
+  INCIDENT_COOLDOWN_SECONDS: "300"
+  CATALOG_URL: http://catalog-api:8001
+  PAYMENTS_URL: http://payments-api:8003

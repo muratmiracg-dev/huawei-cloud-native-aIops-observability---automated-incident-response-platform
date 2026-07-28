@@ -1,0 +1,13 @@
+Huawei Cloud-Native AIOps has been installed.
+
+Verify workloads:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/part-of={{ include "huawei-aiops.name" . }}
+
+Inspect the AIOps API:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "huawei-aiops.fullname" . }}-aiops-api 8004:8004
+
+Automation mode:
+  {{ .Values.platform.automationMode }}
+
+Keep `dry-run` enabled until RBAC, runbooks, alert quality, and rollback controls
+have been validated in the target Huawei Cloud CCE environment.

@@ -1,0 +1,39 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: catalog-api
+  namespace: huawei-aiops
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: catalog-api}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: orders-api
+  namespace: huawei-aiops
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: {app.kubernetes.io/name: orders-api}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payments-api
+  namespace: huawei-aiops
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: payments-api}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aiops-api
+  namespace: huawei-aiops
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: aiops-api}

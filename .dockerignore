@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+htmlcov
+coverage.xml
+terraform
+helm
+kubernetes
+docs
+presentations
+reports
+images
+tests
+tmp

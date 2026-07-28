@@ -1,0 +1,15 @@
+{{- range $name, $service := .Values.services }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "huawei-aiops.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "huawei-aiops.commonLabels" $ | nindent 4 }}
+spec:
+  minAvailable: {{ $service.disruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+      app.kubernetes.io/instance: {{ $.Release.Name }}
+---
+{{- end }}

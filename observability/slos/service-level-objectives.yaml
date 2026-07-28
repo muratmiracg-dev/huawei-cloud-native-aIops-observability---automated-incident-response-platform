@@ -1,0 +1,50 @@
+apiVersion: sre.huawei-aiops/v1
+kind: ServiceLevelObjectiveCatalog
+metadata:
+  owner: platform-sre
+  reviewCadence: monthly
+spec:
+  services:
+    - name: orders-api
+      objectives:
+        - name: availability
+          sli: successful_requests / total_requests
+          target: 0.999
+          window: 30d
+          alerting:
+            fastBurn: {rate: 14.4, window: 5m, severity: critical}
+            slowBurn: {rate: 3.0, window: 1h, severity: warning}
+        - name: latency
+          sli: requests_below_750ms / total_requests
+          target: 0.99
+          window: 30d
+    - name: catalog-api
+      objectives:
+        - name: availability
+          sli: successful_requests / total_requests
+          target: 0.999
+          window: 30d
+        - name: latency
+          sli: requests_below_500ms / total_requests
+          target: 0.99
+          window: 30d
+    - name: payments-api
+      objectives:
+        - name: availability
+          sli: non_5xx_requests / total_requests
+          target: 0.995
+          window: 30d
+        - name: latency
+          sli: requests_below_750ms / total_requests
+          target: 0.99
+          window: 30d
+    - name: aiops-api
+      objectives:
+        - name: availability
+          sli: successful_requests / total_requests
+          target: 0.999
+          window: 30d
+        - name: detection-latency
+          sli: incidents_detected_below_60s / total_incidents
+          target: 0.95
+          window: 30d

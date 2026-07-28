@@ -1,0 +1,20 @@
+apiVersion: v2
+name: huawei-aiops
+description: Huawei Cloud-Native AIOps, observability, and incident response platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - huawei-cloud
+  - cce
+  - aiops
+  - observability
+  - sre
+  - incident-response
+maintainers:
+  - name: Murat Miraç Gedik
+home: https://github.com/muratmiracg-dev/huawei-cloud-native-aIops-observability---automated-incident-response-platform
+icon: https://raw.githubusercontent.com/muratmiracg-dev/huawei-cloud-native-aIops-observability---automated-incident-response-platform/main/images/aiops-hero.png
+sources:
+  - https://github.com/muratmiracg-dev/huawei-cloud-native-aIops-observability---automated-incident-response-platform

@@ -1,0 +1,65 @@
+name: Publish verified images to Huawei Cloud SWR
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Immutable release tag
+        required: true
+        default: "1.0.0"
+      environment:
+        description: GitHub environment containing approved SWR credentials
+        required: true
+        default: "huawei-cloud-portfolio"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.service.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment: ${{ inputs.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - {name: catalog-api, module: "services.catalog.main:app", port: 8001}
+          - {name: orders-api, module: "services.orders.main:app", port: 8002}
+          - {name: payments-api, module: "services.payments.main:app", port: 8003}
+          - {name: aiops-api, module: "aiops.api:app", port: 8004}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate required secrets
+        env:
+          SWR_REGISTRY: ${{ secrets.HUAWEI_SWR_REGISTRY }}
+          SWR_USER: ${{ secrets.HUAWEI_SWR_USER }}
+          SWR_PASSWORD: ${{ secrets.HUAWEI_SWR_PASSWORD }}
+        run: |
+          test -n "$SWR_REGISTRY"
+          test -n "$SWR_USER"
+          test -n "$SWR_PASSWORD"
+
+      - name: Authenticate to SWR
+        env:
+          SWR_REGISTRY: ${{ secrets.HUAWEI_SWR_REGISTRY }}
+          SWR_USER: ${{ secrets.HUAWEI_SWR_USER }}
+          SWR_PASSWORD: ${{ secrets.HUAWEI_SWR_PASSWORD }}
+        run: printf '%s' "$SWR_PASSWORD" | docker login "$SWR_REGISTRY" --username "$SWR_USER" --password-stdin
+
+      - name: Build and push immutable image
+        env:
+          SWR_REGISTRY: ${{ secrets.HUAWEI_SWR_REGISTRY }}
+          SWR_ORGANIZATION: ${{ secrets.HUAWEI_SWR_ORGANIZATION }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          image="$SWR_REGISTRY/$SWR_ORGANIZATION/${{ matrix.service.name }}:$IMAGE_TAG"
+          docker build \
+            --file docker/Dockerfile \
+            --build-arg APP_MODULE=${{ matrix.service.module }} \
+            --build-arg APP_PORT=${{ matrix.service.port }} \
+            --tag "$image" .
+          docker push "$image"

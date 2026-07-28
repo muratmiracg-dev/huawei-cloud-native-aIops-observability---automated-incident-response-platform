@@ -1,0 +1,98 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  registry: swr.eu-west-101.myhuaweicloud.eu/huawei-aiops
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+  pullSecrets: []
+
+platform:
+  environment: production
+  logLevel: INFO
+  tracingEnabled: true
+  faultInjectionEnabled: false
+  otlpEndpoint: http://otel-collector.monitoring.svc:4317
+  serviceNamespace: huawei-aiops
+  automationMode: dry-run
+  automationCooldownSeconds: 300
+
+services:
+  catalog-api:
+    image: catalog-api
+    port: 8001
+    replicas: 2
+    serviceAccount: workload
+    resources:
+      requests: {cpu: 100m, memory: 128Mi}
+      limits: {cpu: 500m, memory: 384Mi}
+    autoscaling:
+      enabled: false
+    disruptionBudget:
+      minAvailable: 1
+  orders-api:
+    image: orders-api
+    port: 8002
+    replicas: 3
+    serviceAccount: workload
+    resources:
+      requests: {cpu: 150m, memory: 192Mi}
+      limits: {cpu: "1", memory: 512Mi}
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 65
+    disruptionBudget:
+      minAvailable: 2
+  payments-api:
+    image: payments-api
+    port: 8003
+    replicas: 2
+    serviceAccount: workload
+    resources:
+      requests: {cpu: 100m, memory: 128Mi}
+      limits: {cpu: 500m, memory: 384Mi}
+    autoscaling:
+      enabled: false
+    disruptionBudget:
+      minAvailable: 1
+  aiops-api:
+    image: aiops-api
+    port: 8004
+    replicas: 2
+    serviceAccount: incident-responder
+    resources:
+      requests: {cpu: 250m, memory: 384Mi}
+      limits: {cpu: "1", memory: 1Gi}
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    disruptionBudget:
+      minAvailable: 1
+
+rbac:
+  incidentResponder:
+    create: true
+
+networkPolicy:
+  enabled: true
+  monitoringNamespace: monitoring
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 10001
+
+topologySpread:
+  enabled: true

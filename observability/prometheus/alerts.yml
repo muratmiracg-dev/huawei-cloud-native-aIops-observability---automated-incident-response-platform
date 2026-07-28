@@ -1,0 +1,100 @@
+groups:
+  - name: service-health
+    interval: 30s
+    rules:
+      - alert: ServiceUnavailable
+        expr: up{job=~".+-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "{{ $labels.job }} is unavailable"
+          runbook_url: "docs/runbooks/RB-006-service-unavailable.md"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (service) (rate(http_server_requests_total{status=~"5.."}[5m]))
+            /
+            clamp_min(sum by (service) (rate(http_server_requests_total[5m])), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "{{ $labels.service }} error rate exceeds 5%"
+          runbook_url: "docs/runbooks/RB-002-downstream-dependency.md"
+
+      - alert: CriticalLatency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (service, le) (rate(http_server_request_duration_seconds_bucket[5m]))
+          ) > 0.75
+        for: 10m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "{{ $labels.service }} p95 latency exceeds 750 ms"
+          runbook_url: "docs/runbooks/RB-001-capacity-saturation.md"
+
+  - name: slo-burn-rate
+    interval: 30s
+    rules:
+      - record: service:http_requests:rate5m
+        expr: sum by (service) (rate(http_server_requests_total[5m]))
+
+      - record: service:http_errors:ratio5m
+        expr: |
+          sum by (service) (rate(http_server_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(service:http_requests:rate5m, 0.001)
+
+      - alert: AvailabilitySLOBurnRateFast
+        expr: service:http_errors:ratio5m > (14.4 * 0.001)
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability-99.9
+        annotations:
+          summary: "Fast SLO burn detected for {{ $labels.service }}"
+          description: "The 99.9% availability error budget is burning >14.4x."
+
+      - alert: AvailabilitySLOBurnRateSlow
+        expr: |
+          (
+            sum by (service) (rate(http_server_requests_total{status=~"5.."}[1h]))
+            /
+            clamp_min(sum by (service) (rate(http_server_requests_total[1h])), 0.001)
+          ) > (3 * 0.001)
+        for: 30m
+        labels:
+          severity: warning
+          slo: availability-99.9
+        annotations:
+          summary: "Slow SLO burn detected for {{ $labels.service }}"
+
+  - name: aiops
+    interval: 30s
+    rules:
+      - alert: CriticalAIOpsAnomaly
+        expr: aiops_anomaly_score > 0.78
+        for: 1m
+        labels:
+          severity: critical
+          team: sre
+        annotations:
+          summary: "Critical anomaly detected for {{ $labels.service }}"
+          description: "{{ $labels.metric }} anomaly score is {{ $value }}."
+
+      - alert: AutomationRepeatedlyBlocked
+        expr: increase(aiops_automation_actions_total{outcome=~"blocked|cooldown"}[15m]) > 3
+        for: 5m
+        labels:
+          severity: warning
+          team: sre
+        annotations:
+          summary: "Repeated automation guardrail blocks"

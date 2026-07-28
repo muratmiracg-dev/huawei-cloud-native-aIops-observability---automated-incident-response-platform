@@ -1,0 +1,12 @@
+region                    = "tr-west-1"
+availability_zone         = "tr-west-1a"
+environment               = "portfolio"
+key_pair_name             = "replace-with-existing-keypair"
+swr_organization          = "replace-with-globally-unique-organization"
+observability_bucket_name = "replace-with-globally-unique-obs-bucket"
+
+# Confirm current regional availability in the Huawei Cloud console.
+cluster_version = "v1.31"
+cluster_flavor  = "cce.s1.small"
+node_flavor     = "s7n.large.2"
+node_os         = "Huawei Cloud EulerOS 2.0"
