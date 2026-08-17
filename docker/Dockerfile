@@ -1,4 +1,4 @@
-FROM python:3.12.11-slim-bookworm AS runtime
+FROM python:3.14.7-slim-bookworm AS runtime
 
 ARG APP_MODULE
 ARG APP_PORT=8000
