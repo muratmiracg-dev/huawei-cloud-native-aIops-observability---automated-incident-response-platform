@@ -9,6 +9,8 @@
 | `active` | Execute only allow-listed low/medium-risk actions |
 
 `dry-run` is the default in Docker, Kubernetes, Helm, and documentation.
+Any unrecognized mode fails closed at the policy boundary and cannot reach the
+automation executor.
 
 ## Control sequence
 
