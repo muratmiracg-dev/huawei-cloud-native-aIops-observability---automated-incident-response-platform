@@ -75,6 +75,31 @@ def test_disabled_and_empty_hypothesis_decisions() -> None:
     assert "disabled" in disabled.reason
 
 
+def test_unknown_mode_fails_closed() -> None:
+    decision = IncidentPolicy().evaluate(
+        incident(cause="CPU saturation and insufficient replica capacity"),
+        "actve",
+    )
+    assert decision.approved is False
+    assert "fail-closed" in decision.reason
+
+
+def test_unknown_mode_never_reaches_executor() -> None:
+    calls: list[str] = []
+
+    def executor(decision) -> str:
+        calls.append(decision.action)
+        return "executed"
+
+    decision, outcome = IncidentOrchestrator(
+        mode="actve",
+        executor=executor,
+    ).handle(incident(cause="CPU saturation and insufficient replica capacity"))
+    assert decision.approved is False
+    assert outcome == "blocked"
+    assert calls == []
+
+
 def test_cooldown_registry() -> None:
     registry = CooldownRegistry(cooldown_seconds=60)
     now = datetime.now(UTC)
