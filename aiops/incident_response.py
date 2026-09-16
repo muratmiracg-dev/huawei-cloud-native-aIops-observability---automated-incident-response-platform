@@ -59,8 +59,16 @@ class IncidentPolicy:
         )
         confidence_pass = hypothesis.confidence >= threshold
         safe_for_active = risk in {"low", "medium"}
-        approved = confidence_pass and mode != "disabled" and (mode == "dry-run" or safe_for_active)
-        if mode == "disabled":
+        valid_mode = mode in {"disabled", "dry-run", "active"}
+        approved = (
+            valid_mode
+            and confidence_pass
+            and mode != "disabled"
+            and (mode == "dry-run" or safe_for_active)
+        )
+        if not valid_mode:
+            reason = "Unknown automation mode; action blocked by fail-closed guardrail."
+        elif mode == "disabled":
             reason = "Automation is disabled by configuration."
         elif not confidence_pass:
             reason = f"Confidence {hypothesis.confidence:.2f} is below {threshold:.2f}."
