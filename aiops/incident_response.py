@@ -90,11 +90,19 @@ class IncidentPolicy:
 
 class CooldownRegistry:
     def __init__(self, cooldown_seconds: int = 300) -> None:
+        if (
+            isinstance(cooldown_seconds, bool)
+            or not isinstance(cooldown_seconds, int)
+            or cooldown_seconds < 0
+        ):
+            raise ValueError("cooldown_seconds must be a non-negative integer")
         self.cooldown = timedelta(seconds=cooldown_seconds)
         self._last_action: dict[tuple[str, str], datetime] = {}
 
     def allow(self, target: str, action: str, now: datetime | None = None) -> bool:
         now = now or datetime.now(UTC)
+        if now.tzinfo is None or now.utcoffset() is None:
+            raise ValueError("now must be timezone-aware")
         key = (target, action)
         previous = self._last_action.get(key)
         if previous and now - previous < self.cooldown:
