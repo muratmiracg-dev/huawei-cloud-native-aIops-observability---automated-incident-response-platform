@@ -12,6 +12,10 @@
 Any unrecognized mode fails closed at the policy boundary and cannot reach the
 automation executor.
 
+Cooldown configuration must be a non-negative integer number of seconds, and
+explicit evaluation timestamps must include a time zone. Invalid values are
+rejected before an action can be recorded or executed.
+
 ## Control sequence
 
 ```mermaid

@@ -1,5 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from aiops.incident_response import (
     AuditWriter,
     CooldownRegistry,
@@ -106,6 +108,16 @@ def test_cooldown_registry() -> None:
     assert registry.allow("orders-api", "scale", now) is True
     assert registry.allow("orders-api", "scale", now + timedelta(seconds=30)) is False
     assert registry.allow("orders-api", "scale", now + timedelta(seconds=61)) is True
+
+
+def test_cooldown_registry_rejects_unsafe_configuration_and_naive_time() -> None:
+    for value in (-1, 1.5, True):
+        with pytest.raises(ValueError, match="cooldown_seconds"):
+            CooldownRegistry(cooldown_seconds=value)  # type: ignore[arg-type]
+
+    registry = CooldownRegistry()
+    with pytest.raises(ValueError, match="timezone-aware"):
+        registry.allow("orders-api", "scale", datetime(2026, 1, 1))
 
 
 def test_orchestrator_executes_once_then_blocks_on_cooldown() -> None:
