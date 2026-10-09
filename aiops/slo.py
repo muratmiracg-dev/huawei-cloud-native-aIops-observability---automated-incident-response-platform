@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 
 
@@ -18,8 +19,12 @@ def calculate_error_budget(
     total_events: int,
     bad_events: int,
 ) -> ErrorBudget:
-    if not 0 < objective < 1:
+    if isinstance(objective, bool) or not isinstance(objective, (int, float)):
+        raise TypeError("objective must be a numeric ratio")
+    if not math.isfinite(objective) or not 0 < objective < 1:
         raise ValueError("objective must be between 0 and 1")
+    if type(total_events) is not int or type(bad_events) is not int:
+        raise TypeError("event counts must be integers")
     if total_events <= 0:
         raise ValueError("total_events must be positive")
     if not 0 <= bad_events <= total_events:

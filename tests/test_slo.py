@@ -22,3 +22,12 @@ def test_error_budget_calculation() -> None:
 def test_error_budget_validation(objective: float, total: int, bad: int) -> None:
     with pytest.raises(ValueError):
         calculate_error_budget(objective=objective, total_events=total, bad_events=bad)
+
+
+@pytest.mark.parametrize(
+    ("objective", "total", "bad"),
+    [(0.99, True, 0), (0.99, 100.0, 0), (0.99, 100, False), ("0.99", 100, 0)],
+)
+def test_error_budget_rejects_ambiguous_scalar_types(objective, total, bad) -> None:
+    with pytest.raises(TypeError):
+        calculate_error_budget(objective=objective, total_events=total, bad_events=bad)
