@@ -19,7 +19,7 @@ def calculate_error_budget(
     total_events: int,
     bad_events: int,
 ) -> ErrorBudget:
-    if isinstance(objective, bool) or not isinstance(objective, (int, float)):
+    if isinstance(objective, bool) or not isinstance(objective, int | float):
         raise TypeError("objective must be a numeric ratio")
     if not math.isfinite(objective) or not 0 < objective < 1:
         raise ValueError("objective must be between 0 and 1")
