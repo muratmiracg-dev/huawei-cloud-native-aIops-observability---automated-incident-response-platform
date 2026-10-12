@@ -1,7 +1,8 @@
+import math
 from datetime import UTC, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class Severity(StrEnum):
@@ -35,6 +36,21 @@ class Signal(BaseModel):
     metric: str
     value: float
     anomaly_score: float = Field(ge=0.0, le=1.0)
+
+    @field_validator("service", "metric")
+    @classmethod
+    def non_blank_identifier(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("signal identifiers must not be blank")
+        return value
+
+    @field_validator("value", "anomaly_score")
+    @classmethod
+    def finite_signal_value(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("signal values must be finite")
+        return value
 
 
 class RootCauseHypothesis(BaseModel):
