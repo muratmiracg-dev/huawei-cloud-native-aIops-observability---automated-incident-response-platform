@@ -1,3 +1,5 @@
+import pytest
+
 from aiops.models import Signal
 from aiops.root_cause import RootCauseEngine
 
@@ -43,3 +45,27 @@ def test_root_cause_requires_complete_rule_evidence() -> None:
         ]
     )
     assert hypotheses == []
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"service": " ", "metric": "error_rate", "value": 1, "anomaly_score": 0.5},
+        {"service": "orders-api", "metric": " ", "value": 1, "anomaly_score": 0.5},
+        {
+            "service": "orders-api",
+            "metric": "error_rate",
+            "value": float("nan"),
+            "anomaly_score": 0.5,
+        },
+        {
+            "service": "orders-api",
+            "metric": "error_rate",
+            "value": 1,
+            "anomaly_score": float("inf"),
+        },
+    ],
+)
+def test_signal_contract_rejects_blank_or_non_finite_values(kwargs) -> None:
+    with pytest.raises(ValueError):
+        Signal(**kwargs)
