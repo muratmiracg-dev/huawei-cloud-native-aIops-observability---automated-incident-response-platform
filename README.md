@@ -97,6 +97,8 @@ $$
 - Deterministic random state makes demonstrations and tests reproducible.
 - Ranked root-cause hypotheses require correlated evidence; a single alert is
   not treated as causation.
+- Root-cause result limits must be integers from 1 through 100, preventing ambiguous
+  negative slicing or unbounded response requests.
 - Warning and critical decisions are separated by explicit thresholds.
 
 See [AIOps methodology](docs/aiops-methodology.md) and

@@ -56,6 +56,10 @@ class RootCauseEngine:
         self.rules = rules
 
     def rank(self, signals: list[Signal], limit: int = 3) -> list[RootCauseHypothesis]:
+        if isinstance(limit, bool) or not isinstance(limit, int):
+            raise TypeError("limit must be an integer")
+        if not 1 <= limit <= 100:
+            raise ValueError("limit must be between 1 and 100")
         by_service: dict[str, dict[str, Signal]] = {}
         for signal in signals:
             by_service.setdefault(signal.service, {})[signal.metric] = signal
