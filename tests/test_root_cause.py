@@ -47,6 +47,18 @@ def test_root_cause_requires_complete_rule_evidence() -> None:
     assert hypotheses == []
 
 
+@pytest.mark.parametrize("limit", [0, -1, 101])
+def test_root_cause_rejects_out_of_range_limits(limit: int) -> None:
+    with pytest.raises(ValueError, match="between 1 and 100"):
+        RootCauseEngine().rank([], limit=limit)
+
+
+@pytest.mark.parametrize("limit", [True, 1.5, "3"])
+def test_root_cause_rejects_non_integer_limits(limit) -> None:
+    with pytest.raises(TypeError, match="must be an integer"):
+        RootCauseEngine().rank([], limit=limit)
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
