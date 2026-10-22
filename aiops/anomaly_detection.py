@@ -26,16 +26,16 @@ class HybridAnomalyDetector:
     def _validate_config(config: DetectorConfig) -> None:
         for field in ("warning_threshold", "critical_threshold", "contamination"):
             value = getattr(config, field)
-            if isinstance(value, (bool, np.bool_)) or not isinstance(
-                value, (int, float, np.integer, np.floating)
+            if isinstance(value, bool | np.bool_) or not isinstance(
+                value, int | float | np.integer | np.floating
             ) or not np.isfinite(value):
                 raise ValueError(f"{field} must be a finite numeric value")
         if not 0 <= config.warning_threshold < config.critical_threshold <= 1:
             raise ValueError("thresholds must satisfy 0 <= warning < critical <= 1")
         if not 0 < config.contamination <= 0.5:
             raise ValueError("contamination must be greater than 0 and at most 0.5")
-        if isinstance(config.random_state, (bool, np.bool_)) or not isinstance(
-            config.random_state, (int, np.integer)
+        if isinstance(config.random_state, bool | np.bool_) or not isinstance(
+            config.random_state, int | np.integer
         ):
             raise ValueError("random_state must be an integer")
 
