@@ -224,6 +224,8 @@ docker compose down --remove-orphans
 
 ## Testing and validation
 
+Detector thresholds, contamination, and random-state configuration are validated fail-closed before model execution.
+
 ```bash
 ruff check .
 ruff format --check .
