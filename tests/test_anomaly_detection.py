@@ -59,3 +59,19 @@ def test_custom_threshold_changes_severity() -> None:
         )
     )
     assert result.severity in {Severity.WARNING, Severity.CRITICAL}
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        DetectorConfig(warning_threshold=True),
+        DetectorConfig(warning_threshold=0.8, critical_threshold=0.7),
+        DetectorConfig(critical_threshold=math.inf),
+        DetectorConfig(contamination=0),
+        DetectorConfig(contamination=0.51),
+        DetectorConfig(random_state=True),
+    ],
+)
+def test_detector_rejects_unsafe_configuration(config: DetectorConfig) -> None:
+    with pytest.raises(ValueError):
+        HybridAnomalyDetector(config)
