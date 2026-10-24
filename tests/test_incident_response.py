@@ -152,10 +152,20 @@ def test_policy_blocks_hypothesis_target_outside_incident_services() -> None:
         calls.append(decision.action)
         return "executed"
 
-    mismatched = incident(
-        cause="CPU saturation and insufficient replica capacity"
-    ).model_copy(
-        update={"affected_services": ["payments-api"]}
+    hypothesis = RootCauseHypothesis(
+        rank=1,
+        cause="CPU saturation and insufficient replica capacity",
+        affected_service="orders-api",
+        confidence=0.95,
+        evidence=["test evidence"],
+        recommended_runbook="RB-TEST",
+    )
+    mismatched = Incident(
+        incident_id="INC-TEST",
+        title="Test incident",
+        severity=Severity.CRITICAL,
+        affected_services=["payments-api"],
+        hypotheses=[hypothesis],
     )
     orchestrator = IncidentOrchestrator(
         mode="dry-run",
@@ -169,7 +179,6 @@ def test_policy_blocks_hypothesis_target_outside_incident_services() -> None:
     assert "not listed among incident affected services" in decision.reason
     assert outcome == "blocked"
     assert calls == []
-
 
 def test_audit_writer_persists_decision(tmp_path) -> None:
     path = tmp_path / "audit.jsonl"
