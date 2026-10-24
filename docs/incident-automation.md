@@ -12,6 +12,11 @@
 Any unrecognized mode fails closed at the policy boundary and cannot reach the
 automation executor.
 
+The top-ranked root-cause hypothesis must target a service listed in the incident's
+`affected_services`. A mismatch produces a blocked `none` decision and cannot
+reach the executor, preventing evidence for one incident from authorizing changes
+to an unrelated service.
+
 Cooldown configuration must be a non-negative integer number of seconds, and
 explicit evaluation timestamps must include a time zone. Invalid values are
 rejected before an action can be recorded or executed.

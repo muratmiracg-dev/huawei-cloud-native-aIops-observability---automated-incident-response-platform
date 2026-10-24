@@ -53,6 +53,20 @@ class IncidentPolicy:
             )
 
         hypothesis = incident.hypotheses[0]
+        if hypothesis.affected_service not in incident.affected_services:
+            return AutomationDecision(
+                incident_id=incident.incident_id,
+                action="none",
+                target="unknown",
+                mode=mode,
+                approved=False,
+                reason=(
+                    "Hypothesis target is not listed among incident affected services; "
+                    "action blocked by fail-closed guardrail."
+                ),
+                risk="none",
+            )
+
         action, risk, threshold = self.ACTIONS.get(
             hypothesis.cause,
             ("notify", "low", 0.65),
