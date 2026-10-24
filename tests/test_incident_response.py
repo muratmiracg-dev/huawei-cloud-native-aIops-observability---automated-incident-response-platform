@@ -154,11 +154,14 @@ def test_policy_blocks_hypothesis_target_outside_incident_services() -> None:
 
     mismatched = incident(
         cause="CPU saturation and insufficient replica capacity"
-    ).model_copy(update={"affected_services": ["payments-api"]})
-    decision, outcome = IncidentOrchestrator(
+    ).model_copy(
+        update={"affected_services": ["payments-api"]}
+    )
+    orchestrator = IncidentOrchestrator(
         mode="dry-run",
         executor=executor,
-    ).handle(mismatched)
+    )
+    decision, outcome = orchestrator.handle(mismatched)
 
     assert decision.approved is False
     assert decision.action == "none"
