@@ -180,6 +180,7 @@ def test_policy_blocks_hypothesis_target_outside_incident_services() -> None:
     assert outcome == "blocked"
     assert calls == []
 
+
 def test_audit_writer_persists_decision(tmp_path) -> None:
     path = tmp_path / "audit.jsonl"
     orchestrator = IncidentOrchestrator(
