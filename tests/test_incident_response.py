@@ -145,6 +145,29 @@ def test_orchestrator_executes_once_then_blocks_on_cooldown() -> None:
     assert calls == ["scale"]
 
 
+def test_policy_blocks_hypothesis_target_outside_incident_services() -> None:
+    calls: list[str] = []
+
+    def executor(decision) -> str:
+        calls.append(decision.action)
+        return "executed"
+
+    mismatched = incident(
+        cause="CPU saturation and insufficient replica capacity"
+    ).model_copy(update={"affected_services": ["payments-api"]})
+    decision, outcome = IncidentOrchestrator(
+        mode="dry-run",
+        executor=executor,
+    ).handle(mismatched)
+
+    assert decision.approved is False
+    assert decision.action == "none"
+    assert decision.target == "unknown"
+    assert "not listed among incident affected services" in decision.reason
+    assert outcome == "blocked"
+    assert calls == []
+
+
 def test_audit_writer_persists_decision(tmp_path) -> None:
     path = tmp_path / "audit.jsonl"
     orchestrator = IncidentOrchestrator(
