@@ -18,6 +18,10 @@ automation actions.
 | `aiops_active_incidents` | Gauge | severity | Incident load |
 | `aiops_automation_actions_total` | Counter | action, mode, outcome | Automation governance |
 
+`route` is the matched route template (for example `/products/{sku}`), never the raw URL
+path, so ids and scanner probes cannot create unbounded label cardinality. Requests that
+match no route are recorded as `route="unmatched"`.
+
 ## Logs
 
 Application logs are structured JSON and include severity, logger, message, and
