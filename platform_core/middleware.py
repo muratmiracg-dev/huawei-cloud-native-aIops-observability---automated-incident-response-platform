@@ -8,12 +8,35 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
+from starlette.routing import Match
 
 from platform_core.faults import FaultController
 from platform_core.logging import request_id_context
 from platform_core.metrics import HTTP_DURATION, HTTP_REQUESTS
 
 LOGGER = logging.getLogger(__name__)
+
+
+UNMATCHED_ROUTE = "unmatched"
+
+
+def _route_template(request: Request) -> str:
+    """Return the matched route template (e.g. ``/products/{sku}``) for metric labels.
+
+    Using the raw URL path as a label value creates one Prometheus time series per id
+    and per scanner probe (unbounded cardinality). Requests that match no route share a
+    single ``unmatched`` label value.
+    """
+    route = request.scope.get("route")
+    if route is None:
+        # Not routed yet, e.g. a synthetic fault answered before call_next.
+        for candidate in getattr(request.app, "routes", ()):
+            match, _ = candidate.matches(request.scope)
+            if match is Match.FULL:
+                route = candidate
+                break
+    template = getattr(route, "path_format", None) or getattr(route, "path", None)
+    return template or UNMATCHED_ROUTE
 
 
 def _deterministic_failure(request_id: str, error_rate: float) -> bool:
@@ -72,15 +95,16 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
             raise
         finally:
             duration = time.perf_counter() - started
+            route_label = _route_template(request)
             HTTP_REQUESTS.labels(
                 service=self.service_name,
                 method=request.method,
-                route=route,
+                route=route_label,
                 status=str(status),
             ).inc()
             HTTP_DURATION.labels(
                 service=self.service_name,
                 method=request.method,
-                route=route,
+                route=route_label,
             ).observe(duration)
             request_id_context.reset(token)

@@ -2,6 +2,16 @@
 
 All notable changes are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- HTTP request and latency metrics used the raw URL path as the `route` label, creating one
+  Prometheus series per id (`/products/SKU-1`, `/orders/<uuid>`) and per scanner probe
+  (`/.env`, `/wp-login.php`). They now use the matched route template (`/products/{sku}`), and
+  requests that match no route share `route="unmatched"`. Synthetic-fault 503s are labelled with
+  their template too.
+
 ## [1.0.0] - 2026-07-27
 
 ### Added
