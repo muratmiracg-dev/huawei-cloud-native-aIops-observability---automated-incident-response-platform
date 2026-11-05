@@ -1,0 +1,72 @@
+# promtool test rules observability/prometheus/alerts.test.yml
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 30s
+
+tests:
+  # 3% 5xx: above 14.4x the 0.1% budget (1.44%) but below 14.4x the 0.5% budget (7.2%).
+  - name: fast burn uses each service's own error budget
+    interval: 30s
+    input_series:
+      - series: 'http_server_requests_total{service="orders-api",status="200"}'
+        values: '0+970x40'
+      - series: 'http_server_requests_total{service="orders-api",status="500"}'
+        values: '0+30x40'
+      - series: 'http_server_requests_total{service="payments-api",status="200"}'
+        values: '0+970x40'
+      - series: 'http_server_requests_total{service="payments-api",status="500"}'
+        values: '0+30x40'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AvailabilitySLOBurnRateFast
+        exp_alerts:
+          - exp_labels:
+              service: orders-api
+              severity: critical
+              slo: availability
+            exp_annotations:
+              summary: "Fast SLO burn detected for orders-api"
+              description: "The availability error budget is burning >14.4x."
+
+  - name: payments-api fast burn above 14.4x its 0.5% budget
+    interval: 30s
+    input_series:
+      - series: 'http_server_requests_total{service="payments-api",status="200"}'
+        values: '0+920x40'
+      - series: 'http_server_requests_total{service="payments-api",status="500"}'
+        values: '0+80x40'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: AvailabilitySLOBurnRateFast
+        exp_alerts:
+          - exp_labels:
+              service: payments-api
+              severity: critical
+              slo: availability
+            exp_annotations:
+              summary: "Fast SLO burn detected for payments-api"
+              description: "The availability error budget is burning >14.4x."
+
+  # 1% 5xx for over an hour: above 3x the 0.1% budget (0.3%), below 3x 0.5% (1.5%).
+  - name: slow burn uses each service's own error budget
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_total{service="catalog-api",status="200"}'
+        values: '0+990x120'
+      - series: 'http_server_requests_total{service="catalog-api",status="500"}'
+        values: '0+10x120'
+      - series: 'http_server_requests_total{service="payments-api",status="200"}'
+        values: '0+990x120'
+      - series: 'http_server_requests_total{service="payments-api",status="500"}'
+        values: '0+10x120'
+    alert_rule_test:
+      - eval_time: 100m
+        alertname: AvailabilitySLOBurnRateSlow
+        exp_alerts:
+          - exp_labels:
+              service: catalog-api
+              severity: warning
+              slo: availability
+            exp_annotations:
+              summary: "Slow SLO burn detected for catalog-api"

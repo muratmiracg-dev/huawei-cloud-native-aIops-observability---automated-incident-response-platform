@@ -41,6 +41,28 @@ groups:
           summary: "{{ $labels.service }} p95 latency exceeds 750 ms"
           runbook_url: "docs/runbooks/RB-001-capacity-saturation.md"
 
+  - name: slo-error-budgets
+    interval: 30s
+    rules:
+      # One availability error budget (1 - target) per service, mirroring
+      # observability/slos/service-level-objectives.yaml (tests/test_slo_alert_rules.py).
+      - record: slo:availability_error_budget:ratio
+        labels:
+          service: orders-api
+        expr: vector(0.001)
+      - record: slo:availability_error_budget:ratio
+        labels:
+          service: catalog-api
+        expr: vector(0.001)
+      - record: slo:availability_error_budget:ratio
+        labels:
+          service: payments-api
+        expr: vector(0.005)
+      - record: slo:availability_error_budget:ratio
+        labels:
+          service: aiops-api
+        expr: vector(0.001)
+
   - name: slo-burn-rate
     interval: 30s
     rules:
@@ -54,14 +76,17 @@ groups:
           clamp_min(service:http_requests:rate5m, 0.001)
 
       - alert: AvailabilitySLOBurnRateFast
-        expr: service:http_errors:ratio5m > (14.4 * 0.001)
+        expr: |
+          service:http_errors:ratio5m
+            > on (service)
+          (14.4 * slo:availability_error_budget:ratio)
         for: 2m
         labels:
           severity: critical
-          slo: availability-99.9
+          slo: availability
         annotations:
           summary: "Fast SLO burn detected for {{ $labels.service }}"
-          description: "The 99.9% availability error budget is burning >14.4x."
+          description: "The availability error budget is burning >14.4x."
 
       - alert: AvailabilitySLOBurnRateSlow
         expr: |
@@ -69,11 +94,13 @@ groups:
             sum by (service) (rate(http_server_requests_total{status=~"5.."}[1h]))
             /
             clamp_min(sum by (service) (rate(http_server_requests_total[1h])), 0.001)
-          ) > (3 * 0.001)
+          )
+            > on (service)
+          (3 * slo:availability_error_budget:ratio)
         for: 30m
         labels:
           severity: warning
-          slo: availability-99.9
+          slo: availability
         annotations:
           summary: "Slow SLO burn detected for {{ $labels.service }}"
 
