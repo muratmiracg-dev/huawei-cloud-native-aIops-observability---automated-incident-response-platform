@@ -6,6 +6,13 @@ All notable changes are documented in this file.
 
 ### Fixed
 
+- Closing an incident that was already closed decremented `aiops_active_incidents` again, so a
+  retried or duplicate `POST /v1/incidents/{id}/close` drove the gauge below the real number of
+  open incidents (to negative values in the regression test) and the Grafana *Active incidents*
+  panels undercounted. Closing is now idempotent and only the open-to-closed transition
+  releases the gauge.
+- `scripts/validate_repository.py` now verifies `CHECKSUMS.sha256`, which the README publishes but
+  no check enforced.
 - `AvailabilitySLOBurnRateFast` and `AvailabilitySLOBurnRateSlow` hard-coded a 0.1% (99.9%)
   error budget for every service. `payments-api` has a 99.5% target in the SLO catalog, so its
   alerts fired at one fifth of the intended burn rate (1.44% instead of 7.2% 5xx for fast burn).

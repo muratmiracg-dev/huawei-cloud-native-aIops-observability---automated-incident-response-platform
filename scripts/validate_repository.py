@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -128,6 +129,23 @@ def validate_no_embedded_secrets() -> None:
                 fail(f"potential embedded secret pattern {token!r} in {path}")
 
 
+def validate_deliverable_checksums() -> None:
+    """CHECKSUMS.sha256 is published in the README, so it must match the committed files."""
+    entries = (ROOT / "CHECKSUMS.sha256").read_text(encoding="utf-8").splitlines()
+    if not entries:
+        fail("CHECKSUMS.sha256 is empty")
+    problems = []
+    for line in entries:
+        expected, relative = line.split(maxsplit=1)
+        path = ROOT / relative.strip()
+        if not path.is_file():
+            problems.append(f"{relative}: missing")
+        elif hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            problems.append(f"{relative}: checksum mismatch")
+    if problems:
+        fail(f"CHECKSUMS.sha256 is stale: {problems}")
+
+
 def main() -> int:
     checks = [
         validate_required_paths,
@@ -136,6 +154,7 @@ def main() -> int:
         validate_kubernetes_security,
         validate_runbooks,
         validate_no_embedded_secrets,
+        validate_deliverable_checksums,
     ]
     for check in checks:
         check()

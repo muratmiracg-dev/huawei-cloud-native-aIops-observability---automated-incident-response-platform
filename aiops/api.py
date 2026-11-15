@@ -47,12 +47,14 @@ class IncidentStore:
         with self._lock:
             return list(self._incidents.values())
 
-    def close(self, incident_id: str) -> Incident | None:
+    def close(self, incident_id: str) -> tuple[Incident | None, bool]:
+        """Close an incident; report whether this call moved it from open to closed."""
         with self._lock:
             incident = self._incidents.get(incident_id)
-            if incident:
-                incident.status = "closed"
-            return incident
+            if incident is None or incident.status == "closed":
+                return incident, False
+            incident.status = "closed"
+            return incident, True
 
 
 settings = Settings(service_name="aiops-api")
@@ -128,8 +130,11 @@ async def list_incidents() -> list[Incident]:
 
 @app.post("/v1/incidents/{incident_id}/close", response_model=Incident, tags=["incidents"])
 async def close_incident(incident_id: str) -> Incident:
-    incident = incident_store.close(incident_id)
+    incident, transitioned = incident_store.close(incident_id)
     if not incident:
         raise HTTPException(status_code=404, detail="incident not found")
-    ACTIVE_INCIDENTS.labels(severity=incident.severity.value).dec()
+    # Closing is idempotent. Only the open -> closed transition releases the gauge, so a
+    # retried or duplicate close cannot drive aiops_active_incidents below the real count.
+    if transitioned:
+        ACTIVE_INCIDENTS.labels(severity=incident.severity.value).dec()
     return incident
