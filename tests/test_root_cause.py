@@ -81,3 +81,40 @@ def test_root_cause_rejects_non_integer_limits(limit) -> None:
 def test_signal_contract_rejects_blank_or_non_finite_values(kwargs) -> None:
     with pytest.raises(ValueError):
         Signal(**kwargs)
+
+
+def _signals(service: str, metrics: tuple[str, ...], score: float) -> list[Signal]:
+    return [
+        Signal(service=service, metric=name, value=1.0, anomaly_score=score) for name in metrics
+    ]
+
+
+def test_healthy_metrics_do_not_support_a_cause() -> None:
+    # All-zero anomaly scores used to yield "Catalog dependency degradation" at 0.76,
+    # exactly the circuit-breaker threshold, so automation was approved on no evidence.
+    healthy = _signals("catalog-api", ("error_rate", "request_latency_p95"), 0.0)
+    assert RootCauseEngine().rank(healthy) == []
+
+
+def test_every_required_metric_must_be_anomalous() -> None:
+    signals = [
+        Signal(service="catalog-api", metric="error_rate", value=0.2, anomaly_score=0.95),
+        Signal(service="catalog-api", metric="request_latency_p95", value=0.3, anomaly_score=0.2),
+    ]
+    assert RootCauseEngine().rank(signals) == []
+    assert RootCauseEngine(min_evidence_score=0.1).rank(signals)[0].cause == (
+        "Catalog dependency degradation"
+    )
+
+
+def test_evidence_threshold_is_inclusive() -> None:
+    signals = _signals("catalog-api", ("error_rate", "request_latency_p95"), 0.55)
+    hypotheses = RootCauseEngine().rank(signals)
+    assert [item.cause for item in hypotheses] == ["Catalog dependency degradation"]
+    assert hypotheses[0].confidence == pytest.approx(0.76 + 0.2 * 0.55)
+
+
+@pytest.mark.parametrize("value", [0, -0.1, 1.5, float("nan"), True, "0.5"])
+def test_min_evidence_score_is_validated(value) -> None:
+    with pytest.raises(ValueError, match="min_evidence_score"):
+        RootCauseEngine(min_evidence_score=value)

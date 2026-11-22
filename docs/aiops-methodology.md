@@ -31,6 +31,13 @@ multiple correlated signals for each hypothesis. Examples:
 | Crash loop | Container restarts + error rate |
 | Database pool exhaustion | Pool utilization + p95 latency |
 
+Every required signal must itself be anomalous: its anomaly score must reach the
+evidence threshold (default 0.55, the detector's warning threshold). A metric that is
+merely present but healthy does not support a cause. Without this, the prior alone
+can clear an automation threshold: two healthy catalog metrics (scores 0) used to
+give "Catalog dependency degradation" a confidence of 0.76, exactly the
+circuit-breaker threshold.
+
 Confidence combines a rule-specific prior with the mean anomaly score of the
 required evidence. The API returns ranked evidence so a human can challenge the
 recommendation.

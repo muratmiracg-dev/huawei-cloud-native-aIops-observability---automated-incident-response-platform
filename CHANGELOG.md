@@ -6,6 +6,12 @@ All notable changes are documented in this file.
 
 ### Fixed
 
+- Root-cause rules matched as soon as their metrics were present, whatever their anomaly
+  scores, and confidence was the rule prior plus 0.2 x the mean score. Signals supplied to
+  `POST /v1/analyze` with healthy catalog metrics (scores 0) therefore produced "Catalog
+  dependency degradation" at 0.76, exactly the circuit-breaker threshold, and the low-risk
+  action was approved, also in active mode. Every required signal must now reach an evidence
+  threshold (default 0.55, the detector's warning threshold; `RootCauseEngine(min_evidence_score=...)`).
 - Closing an incident that was already closed decremented `aiops_active_incidents` again, so a
   retried or duplicate `POST /v1/incidents/{id}/close` drove the gauge below the real number of
   open incidents (to negative values in the regression test) and the Grafana *Active incidents*

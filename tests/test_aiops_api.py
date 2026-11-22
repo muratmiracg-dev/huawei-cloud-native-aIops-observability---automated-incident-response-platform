@@ -94,3 +94,32 @@ def test_repeated_close_releases_the_active_incident_gauge_once() -> None:
             assert again.status_code == 200
             assert again.json()["status"] == "closed"
         assert _active(severity) == opened - 1
+
+
+def test_supplied_healthy_signals_do_not_approve_automation() -> None:
+    # The latency series is anomalous, so an incident opens, but the supplied signals say the
+    # catalog metrics are healthy. That must not support a circuit-breaker action.
+    payload = {
+        "series": [
+            {
+                "service": "catalog-api",
+                "metric": "request_latency_p95",
+                "values": [0.2, 0.21, 0.19, 0.22, 0.2, 0.21, 0.2, 0.19, 0.22, 0.2, 0.21, 1.8],
+            }
+        ],
+        "signals": [
+            {"service": "catalog-api", "metric": "error_rate", "value": 0.0, "anomaly_score": 0},
+            {
+                "service": "catalog-api",
+                "metric": "request_latency_p95",
+                "value": 0.2,
+                "anomaly_score": 0,
+            },
+        ],
+    }
+    with TestClient(app) as client:
+        body = client.post("/v1/analyze", json=payload).json()
+        assert body["incident"]["hypotheses"] == []
+        assert body["automation"]["action"] == "none"
+        assert body["automation"]["approved"] is False
+        client.post(f"/v1/incidents/{body['incident']['incident_id']}/close")
