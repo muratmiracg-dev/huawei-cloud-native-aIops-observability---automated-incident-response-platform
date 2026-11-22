@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 
 from aiops.models import RootCauseHypothesis, Signal
@@ -51,9 +52,27 @@ DEFAULT_RULES = (
 )
 
 
+# A metric only counts as evidence when it is itself anomalous. The default matches the
+# detector's warning threshold, so a hypothesis needs every required signal to be at least
+# a warning-level anomaly.
+DEFAULT_MIN_EVIDENCE_SCORE = 0.55
+
+
 class RootCauseEngine:
-    def __init__(self, rules: tuple[Rule, ...] = DEFAULT_RULES) -> None:
+    def __init__(
+        self,
+        rules: tuple[Rule, ...] = DEFAULT_RULES,
+        min_evidence_score: float = DEFAULT_MIN_EVIDENCE_SCORE,
+    ) -> None:
+        if (
+            isinstance(min_evidence_score, bool)
+            or not isinstance(min_evidence_score, int | float)
+            or not math.isfinite(min_evidence_score)
+            or not 0 < min_evidence_score <= 1
+        ):
+            raise ValueError("min_evidence_score must be a number in (0, 1]")
         self.rules = rules
+        self.min_evidence_score = float(min_evidence_score)
 
     def rank(self, signals: list[Signal], limit: int = 3) -> list[RootCauseHypothesis]:
         if isinstance(limit, bool) or not isinstance(limit, int):
@@ -69,6 +88,10 @@ class RootCauseEngine:
             available = by_service.get(rule.service, {})
             matching = [available[name] for name in rule.required_metrics if name in available]
             if len(matching) != len(rule.required_metrics):
+                continue
+            # Presence is not evidence: a healthy metric (score near 0) must not support a
+            # cause, otherwise base confidence alone can clear an automation threshold.
+            if any(item.anomaly_score < self.min_evidence_score for item in matching):
                 continue
             mean_score = sum(item.anomaly_score for item in matching) / len(matching)
             confidence = min(rule.base_confidence + 0.2 * mean_score, 0.99)
